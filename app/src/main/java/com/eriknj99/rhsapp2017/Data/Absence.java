@@ -7,10 +7,10 @@ package com.eriknj99.rhsapp2017.Data;
 public class Absence {
 
     // Instance Vars based on JSON vars
-    private String name;
-    private String id;
-    private String periods;
-    private String assignment;
+    private final String name;
+    private final String id;
+    private final String periods;
+    private final String assignment;
 
     //This class will store all information on an absent teacher and will be used by UI Controllers.
 
@@ -34,6 +34,13 @@ public class Absence {
         return assignment;
     }
 
-
-
+    @Override
+    public String toString() {
+        return "Absence{" +
+                "name='" + name + '\'' +
+                ", id='" + id + '\'' +
+                ", periods='" + periods + '\'' +
+                ", assignment='" + assignment + '\'' +
+                '}';
+    }
 }

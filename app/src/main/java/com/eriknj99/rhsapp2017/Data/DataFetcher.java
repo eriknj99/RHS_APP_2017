@@ -2,9 +2,9 @@ package com.eriknj99.rhsapp2017.Data;
 
 import android.util.Log;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,6 +17,8 @@ import java.util.ArrayList;
 /**
  * Created by erik on 4/3/17.
  */
+
+//This class handles ALL of the json fetching and parsing ONLY call getter methods from the main thread.
 
 public class DataFetcher {
 
@@ -33,8 +35,13 @@ public class DataFetcher {
             try {
                 for (int i = 0; i < object.getJSONArray("absences").length(); i++) {
                     JSONObject temp = object.getJSONArray("absences").getJSONObject(i);
-                    //TODO Parse other absence data and ad it to the Absence object
-                    out.add(new Absence(temp.get("name").toString(), temp.get("id").toString(), "", "asignment"));
+                    out.add(new Absence(
+                            temp.get("name").toString(),
+                            //This is the only way that I could parse out the 2D array in the json it probably is not the best solution.
+                            new JSONObject(new JSONArray(temp.get("info").toString()).get(0).toString()).get("id").toString(),
+                            new JSONObject(new JSONArray(temp.get("info").toString()).get(0).toString()).get("periods").toString(),
+                            new JSONObject(new JSONArray(temp.get("info").toString()).get(0).toString()).get("assignment").toString()
+                            ));
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -43,37 +50,87 @@ public class DataFetcher {
         return out;
     }
 
+    //Parses Json into an arraylist of announcements
     public static ArrayList<Announcement> getAllAnnouncement(){
-        //TODO Implement method to return parsed JSON as arraylist of Announcement
-        return null;
+        ArrayList<Announcement> out = new ArrayList<Announcement>();
+        JSONObject object = getJSONObjectFromNewThread(ANNOUNCEMENT_URL);
+
+        if(object != null){
+            try {
+                for (int i = 0; i < object.getJSONArray("announcements").length(); i++) {
+                    JSONObject temp = object.getJSONArray("announcements").getJSONObject(i);
+                    out.add(new Announcement(
+                            temp.get("id").toString(),
+                            temp.get("title").toString(),
+                            temp.get("when").toString(),
+                            temp.get("where").toString(),
+                            temp.get("more").toString(),
+                            temp.get("endDate").toString()
+                            ));
+                }
+            }   catch (JSONException e) {
+            e.printStackTrace();
+            }
+        }
+
+        return out;
     }
 
-    public static ArrayList<ScheduleItem> getAllScheduleItems(){
-        //TODO Implement method to return parsed JSON as arraylist of ScheduleItem
-        return null;
+    public static Day getCurrentDay(){
+        Day d = null;
+        JSONObject object = getJSONObjectFromNewThread(SCHEDULE_URL);
+
+        ArrayList<ScheduleItem> items = new ArrayList<ScheduleItem>();
+        if(object != null){
+            try{
+
+                for(int i = 0; i < object.getJSONArray("schedule").length(); i++){
+                    JSONObject temp = object.getJSONArray("schedule").getJSONObject(i);
+                    items.add(new ScheduleItem(
+                            temp.get("label").toString(),
+                            Boolean.parseBoolean(temp.get("isPeriod").toString()),
+                            temp.get("start").toString(),
+                            temp.get("end").toString()));
+                }
+
+                d = new Day(
+                        object.get("id").toString(),
+                        object.get("date").toString(),
+                        Boolean.parseBoolean(object.get("isSchoolDay").toString()),
+                        object.get("day").toString(),
+                        object.get("message").toString(),
+                        object.get("nextDate").toString(),
+                        object.get("nextDayId").toString(),
+                        items);
+
+            }catch(JSONException e){
+                e.printStackTrace();
+            }
+        }
+
+        return d;
     }
 
 
         //Automatically reads json object from JSONThread and returns the result
         private static JSONObject getJSONObjectFromNewThread(String url){
-        JSONThread j = new JSONThread(url);
-
-        Thread t = new Thread(j);
-        t.start();
-        try {
-            t.join();
-        }catch(InterruptedException e){
-            e.printStackTrace();
-        }
+            JSONThread j = new JSONThread(url);
+            Thread t = new Thread(j);
+            t.start();
+                try {
+                    t.join();
+                }catch(InterruptedException e){
+                    e.printStackTrace();
+                }
 
         return j.getValue();
     }
         private static String readAll(Reader rd) throws IOException {
             StringBuilder sb = new StringBuilder();
             int cp;
-            while ((cp = rd.read()) != -1) {
-                sb.append((char) cp);
-            }
+                while ((cp = rd.read()) != -1) {
+                    sb.append((char) cp);
+                }
             return sb.toString();
 
         }
